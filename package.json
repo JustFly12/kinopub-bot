@@ -15,7 +15,8 @@
     "start": "node dist/index.js",
     "test": "tsx --test test/*.test.ts",
     "devices": "tsx src/index.ts devices",
-    "auth:login": "tsx src/index.ts login"
+    "auth:login": "tsx src/index.ts login",
+    "bot": "tsx src/bot.ts"
   },
   "dependencies": {
     "grammy": "^1.38.0",

@@ -1,0 +1,34 @@
+# Dependencies and generated build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.pnpm-store/
+
+# Local configuration and secrets; keep the safe template tracked
+.env
+.env.*
+!.env.example
+
+# Runtime data, browser profiles, and authentication state
+data/
+.auth/
+playwright/.auth/
+browser-profile/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Browser diagnostics can contain private page contents
+playwright-report/
+test-results/
+blob-report/
+
+# Logs, caches, and OS metadata
+*.log
+.cache/
+.DS_Store
+Thumbs.db
