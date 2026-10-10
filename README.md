@@ -16,6 +16,17 @@ TypeScript, Node.js 22+, pnpm 11.25.0, Playwright/Chromium, grammY, and Docker C
 
 ## Commands
 
+Telegram commands:
+
+```text
+/register CODE  Register a five-character device code
+/devices        List current devices
+/check          Check Kino authorization
+/status         Show whether the bot is waiting for an email code
+/code CODE      Submit the confirmation code read from email
+/cancel         Cancel a pending login, when safe
+```
+
 ```sh
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
@@ -35,11 +46,20 @@ Optional configuration goes in `.env` (see `.env.example`). Login state is saved
 
 ## Deploy
 
-Copy the repository, `.env`, and the persistent `data/` directory to the server. Stop any other bot instance, then run:
+The production instance lives at `/opt/kinopub-bot` on the Hetzner server. It uses Telegram long polling and exposes no ports. `.env`, `data/auth.json`, and `data/bot-state.json` must remain on the server and must not be committed.
+
+After copying updated source files, stop any other bot instance and run:
 
 ```sh
+cd /opt/kinopub-bot
 docker compose up -d --build
+docker compose ps
 docker compose logs -f bot
 ```
 
-Updates use the same `docker compose up -d --build` command. The container restarts automatically after a server reboot.
+The container uses `restart: unless-stopped`, so it returns automatically after a server reboot. To restart it or apply `.env` changes:
+
+```sh
+docker compose restart bot
+docker compose up -d --force-recreate
+```
