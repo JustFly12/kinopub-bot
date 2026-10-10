@@ -70,9 +70,12 @@ test('device activation runs FIFO cleanup in the shared account queue and report
 test('device activation removes invisible Telegram formatting marks from the command argument',async()=>{
  const activated:string[]=[];
  const state:BotState={ownerStarted:true,nextCheckAt:0,lastCheckAt:null,lastResult:'never',challengePending:false};
+ const oldDevices=['1','2'].map(id=>({id,name:`TV ${id}`,hardware:'TV',created:`Добавлен: 0${id} October 2026 в 10:00`,accessed:'Активность: 08 October 2026 в 11:00'}));
+ const before={...report,devices:oldDevices};
+ const after={...before,count:3,devices:[...oldDevices,{id:'9',name:'New TV',hardware:'TV',created:'Добавлен: 09 October 2026 в 10:00',accessed:'Активность: 09 October 2026 в 10:00'}]};
  const session={
-  async inspect(){return report;},async login(){return {kind:'ready' as const,report};},async submitCode(){return {kind:'ready' as const,report};},
-  async removeDevice(){return report;},async activateDevice(code:string){activated.push(code);return {...report,count:3};},async close(){},
+  async inspect(){return before;},async login(){return {kind:'ready' as const,report:before};},async submitCode(){return {kind:'ready' as const,report:before};},
+  async removeDevice(){return before;},async activateDevice(code:string){activated.push(code);return after;},async close(){},
  };
  const service=new BotService({ownerId:42,state,createSession:()=>session,notifyOwner:async()=>{},saveState:async()=>{}});
  const message=await service.activateDevice('\u200B3CUU7\u200B');
@@ -83,4 +86,16 @@ test('device activation starts reauthorization instead of deleting when the sess
  const s=setup(true);
  const message=await (s.service as unknown as {activateDevice(code:string):Promise<string>}).activateDevice('A1b2C');
  assert.equal(s.calls.login,1);assert.equal(s.calls.code,0);assert.equal(s.state.challengePending,true);assert.match(message,/Email verification/);
+});
+
+test('owner cannot cancel an already-submitted uncertain device activation',async()=>{
+ const s=setup();s.state.activationPlan={baselineDeviceIds:['1','2','3'],preActivationRemovalIds:[],postActivationRemovalIds:[],removedDeviceIds:[],activationSubmitted:true};
+ const message=await s.service.cancel(42);
+ assert.match(message,/cannot be cancelled safely/i);assert.equal(s.state.activationPlan?.activationSubmitted,true);
+});
+
+test('owner can cancel a plan before any device code was submitted',async()=>{
+ const s=setup();s.state.activationPlan={baselineDeviceIds:['1','2','3'],preActivationRemovalIds:[],postActivationRemovalIds:[],removedDeviceIds:[],activationSubmitted:false};
+ const message=await s.service.cancel(42);
+ assert.match(message,/Device activation cancelled/);assert.equal(s.state.activationPlan,undefined);
 });

@@ -65,6 +65,6 @@ export function buildDeviceReport(snapshot: DeviceSnapshot): DeviceReport {
   const devices = ordered.map(item => item.row);
   return {
     count, limit, browserSessions: snapshot.browserSessions, devices,
-    cleanupCandidates: count >= 4 ? devices.slice(0, 2) : [],
+    cleanupCandidates: devices.slice(0, Math.max(0, count - 2)),
   };
 }

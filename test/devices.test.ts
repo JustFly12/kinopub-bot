@@ -13,19 +13,19 @@ const rows = [
   row('105', 'Добавлен: 08 October 2026 в 22:30'),
 ];
 
-test('below capacity threshold, lists registrations without cleanup', () => {
-  for (const count of [0, 1, 2, 3]) {
+test('up to two registrations need no cleanup for the next registration', () => {
+  for (const count of [0, 1, 2]) {
     const result = buildDeviceReport({counter: `Устройства (${count}/5)`, rows: rows.slice(0,count), browserSessions: 5});
     assert.equal(result.count, count);
     assert.equal(result.browserSessions, 5);
     assert.deepEqual(result.cleanupCandidates, []);
   }
 });
-test('four or five registrations select oldest two by registration date, not DOM or activity order', () => {
-  for (const count of [4, 5]) {
+test('three to five registrations select enough oldest devices to finish the next registration at three', () => {
+  for (const count of [3, 4, 5]) {
     const input = rows.slice(0,count);
     const result = buildDeviceReport({counter: `Устройства (${count}/5)`, rows: input, browserSessions: 5});
-    assert.deepEqual(result.cleanupCandidates.map(d => d.id), ['101','102']);
+    assert.deepEqual(result.cleanupCandidates.map(d => d.id), ['101','102','103'].slice(0,count-2));
     assert.equal(input[0]?.id, '104');
   }
 });

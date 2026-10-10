@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { loadEnvFile } from 'node:process';
 import { Bot } from 'grammy';
 import { BotService, type BotState } from './bot-service.js';
+import { restoreActivationPlan } from './activation.js';
 import { isDeviceCode, normalizeDeviceCode } from './device-code.js';
 import { PlaywrightWebsiteSession } from './website-session.js';
 
@@ -27,8 +28,11 @@ async function loadState(path: string): Promise<BotState> {
   const fallback: BotState = {ownerStarted: false, nextCheckAt: 0, lastCheckAt: null, lastResult: 'never', challengePending: false};
   if (!existsSync(path)) return fallback;
   try {
-    const saved = JSON.parse(await readFile(path, 'utf8')) as Partial<BotState>;
-    const state = {...fallback, ...saved};
+    const saved = JSON.parse(await readFile(path, 'utf8')) as Partial<Omit<BotState, 'activationPlan'>> & {activationPlan?: unknown};
+    const {activationPlan: savedPlan, ...savedState} = saved;
+    const state: BotState = {...fallback, ...savedState};
+    const activationPlan = restoreActivationPlan(savedPlan);
+    if (activationPlan) state.activationPlan = activationPlan;
     if (state.challengePending) {
       state.challengePending = false;
       state.lastResult = 'email challenge interrupted by restart';

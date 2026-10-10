@@ -40,7 +40,7 @@ export function describeFailure(error: unknown): string {
     UNEXPECTED_REDIRECT: 'The website redirected to a different origin. Login stopped.',
     INVALID_DEVICE_CODE: 'Device code must contain exactly five alphanumeric characters.',
     DEVICE_CODE_REJECTED: 'The website rejected the device code.',
-    ACTIVATION_UNCONFIRMED: 'The website accepted the code, but the new device did not appear in time.',
+    ACTIVATION_UNCONFIRMED: 'The device activation could not be confirmed. Retry later; the bot will not submit another code until it can reconcile the result.',
     REMOVAL_FAILED: 'An old device could not be removed. Activation stopped.',
     REMOVAL_UNCONFIRMED: 'An old device still appeared after removal. Activation stopped.',
   };
@@ -211,9 +211,18 @@ export class BotService {
   }
   cancel(sender: number): Promise<string> {
     return this.run(async()=>{
-      if(sender !== this.options.ownerId) return 'Only the owner can cancel email verification.';
-      if(!this.pending) return 'No pending email verification.';
-      await this.endChallenge('email verification cancelled'); return 'Email verification cancelled.';
+      if(sender !== this.options.ownerId) return 'Only the owner can cancel pending operations.';
+      if(this.pending) {await this.endChallenge('email verification cancelled'); return 'Email verification cancelled.';}
+      if(this.options.state.activationPlan) {
+        if(this.options.state.activationPlan.activationSubmitted || this.options.state.activationPlan.activatedDeviceId) {
+          return 'This device activation cannot be cancelled safely because it may already have reached kino.watch. Retry later so the bot can reconcile and finish cleanup.';
+        }
+        delete this.options.state.activationPlan;
+        this.options.state.lastResult = 'device activation cancelled';
+        await this.save();
+        return 'Device activation cancelled. You can now submit a new registration code.';
+      }
+      return 'No pending operation.';
     });
   }
   close(): Promise<void> {
